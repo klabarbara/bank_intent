@@ -1,0 +1,5 @@
+dataset_name: "banking77"
+test_split: 0.10
+val_split: 0.10
+seed: 6
+output_dir: "data/processed"
