@@ -17,6 +17,7 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+from transformers.integrations import MLflowCallback
 
 from .config import load_config, TrainCfg
 
@@ -117,6 +118,7 @@ def main(
             fp16=torch.cuda.is_available(),  
             output_dir=cfg.output_dir,
             learning_rate=cfg.lr,
+            weight_decay=cfg.weight_decay,
             eval_strategy="epoch",
             num_train_epochs=cfg.epochs,
             logging_steps=50,
@@ -134,12 +136,13 @@ def main(
             train_dataset=train_ds,
             eval_dataset=val_ds,
             compute_metrics=compute_metrics,
+            callbacks=[MLflowCallback()],
         )
 
         trainer.train()
         metrics = trainer.evaluate()
         mlflow.log_metrics(metrics)
-
+        
         out_dir = Path(cfg.output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(out_dir)
