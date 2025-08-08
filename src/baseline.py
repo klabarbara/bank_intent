@@ -1,3 +1,12 @@
+"""
+zero-shot benchmark using typeform/distilbert-base-uncased-mnli for Banking77 ds : (distilbert used for dev, will use facebook/bart-large-mnli for production)
+
+    1. reads Parquet test set and class list from the training split.
+    2. creates id2label mapping to ensure labels' semantic meaning is preserved while allowing int label usage for metrics
+    2. feeds natural language input to a transformers zero shot pipeline.
+    3. logs Accuracy & Macro-F1 to MLflow, plus a full classification report.
+
+"""
 import os, time
 
 import mlflow, typer, pandas as pd
@@ -5,6 +14,7 @@ from tqdm import tqdm
 from transformers import pipeline
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from sklearn.preprocessing import LabelEncoder
+
 app = typer.Typer()
 
 @app.command()
@@ -25,7 +35,7 @@ def run(
         train = pd.read_parquet(label_map_path)
         id2label = sorted(train["label_text"].unique().tolist())
         classifier = pipeline("zero-shot-classification",
-                              model="facebook/bart-large-mnli",
+                              model="typeform/distilbert-base-uncased-mnli",
                             #   device_map="auto",
                               device=0,)
         batch_size = 16
