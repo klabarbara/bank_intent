@@ -4,7 +4,7 @@ import mlflow, typer, pandas as pd
 from tqdm import tqdm
 from transformers import pipeline
 from sklearn.metrics import accuracy_score, f1_score, classification_report
-
+from sklearn.preprocessing import LabelEncoder
 app = typer.Typer()
 
 @app.command()
@@ -31,6 +31,7 @@ def run(
         batch_size = 16
         texts = list(test["text"])
         preds = []
+
         # speed test to confirm appropriate gpu usage
         if timeit:
             sample = "I want to withdraw cash"
@@ -43,6 +44,7 @@ def run(
             avg = sum(times) / len(times)
             print(f"Average inference time: {avg:.3f} seconds over 5 runs")
             return  
+        
         # note that HF's pipeline() treats the batches as sequence of calls
         # will give erroneous "You seem to be using the pipelines 
         # sequentially on GPU warning"
@@ -51,12 +53,22 @@ def run(
             batch = texts[i:i+batch_size]
             out_batch = classifier(batch, candidate_labels=id2label, multi_label=False)
             preds.extend([out["labels"][0] for out in out_batch])
-        acc = accuracy_score(test["label"], preds)
-        f1 = f1_score(test["label"], preds, average="macro")
+
+        encoder = LabelEncoder().fit(train["label_text"])   
+        y_true = encoder.transform(test["label_text"])
+        y_pred = encoder.transform(preds)
+
+        acc = accuracy_score(y_true, y_pred)
+        f1 = f1_score(y_true, y_pred, average="macro")
         mlflow.log_metric("accuracy", acc)
         mlflow.log_metric("macro_f1", f1)
 
-        report = classification_report(test["label"], preds, output_dict=False)
+        report = classification_report(
+            y_true,
+            y_pred,
+            target_names=encoder.classes_,
+            digits=3
+        )
         
         os.makedirs("artifacts", exist_ok=True)
         with open("artifacts/baseline_report.txt","w") as f:
