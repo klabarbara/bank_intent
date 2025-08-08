@@ -25,6 +25,7 @@ class TrainCfg(BaseModel):
     model_name: str
     batch_size: int
     lr: float
+    weight_decay: float
     epochs: int
     lora: LoraSettings
     output_dir: str
