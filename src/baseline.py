@@ -23,6 +23,8 @@ def run(
         label_map_path: str = "data/processed/train.parquet",
         timeit: bool = False,
         sample_n: int = 0, # enables cli level sample ctrl for dev
+        model_name: str = "typeform/distilbert-base-uncased-mnli",
+        batch_size: int = 64,
     ):    
     mlflow.set_experiment("baseline")
     with mlflow.start_run():
@@ -35,10 +37,9 @@ def run(
         train = pd.read_parquet(label_map_path)
         id2label = sorted(train["label_text"].unique().tolist())
         classifier = pipeline("zero-shot-classification",
-                              model="typeform/distilbert-base-uncased-mnli",
+                              model=model_name,
                             #   device_map="auto",
                               device=0,)
-        batch_size = 16
         texts = list(test["text"])
         preds = []
 
