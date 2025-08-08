@@ -63,11 +63,16 @@ def run(
         mlflow.log_metric("accuracy", acc)
         mlflow.log_metric("macro_f1", f1)
 
+        # generating list of all possible labels for dev sets < len(labels)
+        all_labels = list(range(len(encoder.classes_)))
+
         report = classification_report(
             y_true,
             y_pred,
+            labels=all_labels,
             target_names=encoder.classes_,
-            digits=3
+            digits=3,
+            zero_division=0, # avoids warnings when class is missing
         )
         
         os.makedirs("artifacts", exist_ok=True)
