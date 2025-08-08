@@ -1,7 +1,18 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "bank_intent"
 version = "0.1.0"
 requires-python = ">=3.10"
+description = "ETL, zero-shot, and fine-tuning showcase using Banking77 dataset"
+readme = "README.md"
+authors = [
+  { name = "klab", email = "karlprojekts@gmail.com" }
+]
+
 dependencies = [
   "transformers>=4.41.0",
   "datasets>=2.19.0",

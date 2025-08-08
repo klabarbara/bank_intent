@@ -1,4 +1,4 @@
-import os
+import os, time
 
 import mlflow, typer, pandas as pd
 from tqdm import tqdm
@@ -8,21 +8,41 @@ from sklearn.metrics import accuracy_score, f1_score, classification_report
 app = typer.Typer()
 
 @app.command()
-def run(data_path: str = "data/processed/test.parquet",
-        label_map_path: str = "data/processed/train.parquet"):    
+def run(
+        data_path: str = "data/processed/test.parquet",
+        label_map_path: str = "data/processed/train.parquet",
+        timeit: bool = False,
+        sample_n: int = 0, # enables cli level sample ctrl for dev
+    ):    
     mlflow.set_experiment("baseline")
     with mlflow.start_run():
         test = pd.read_parquet(data_path)
 
+        if sample_n > 0:
+            test = test.iloc[:sample_n].reset_index(drop=True)
+            typer.echo(f"running on sample of {sample_n} rows")
+
         train = pd.read_parquet(label_map_path)
-        id2label = sorted(train["label"].unique().tolist())
+        id2label = sorted(train["label_text"].unique().tolist())
         classifier = pipeline("zero-shot-classification",
                               model="facebook/bart-large-mnli",
-                              device_map="auto")
+                            #   device_map="auto",
+                              device=0,)
         batch_size = 16
         texts = list(test["text"])
         preds = []
-        
+        # speed test to confirm appropriate gpu usage
+        if timeit:
+            sample = "I want to withdraw cash"
+            print(f"Timing classification for: \"{sample}\"")
+            times = []
+            for _ in range(5):
+                start = time.time()
+                classifier(sample, candidate_labels=id2label)
+                times.append(time.time() - start)
+            avg = sum(times) / len(times)
+            print(f"Average inference time: {avg:.3f} seconds over 5 runs")
+            return  
         # note that HF's pipeline() treats the batches as sequence of calls
         # will give erroneous "You seem to be using the pipelines 
         # sequentially on GPU warning"

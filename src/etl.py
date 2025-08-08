@@ -26,7 +26,9 @@ app = typer.Typer()
 def run(cfg_path: str = "configs/data.yaml"):
     cfg = load_config(cfg_path, DataCfg)
     ds = load_dataset(cfg.dataset_name)
+    label_map = ds["train"].features["label"].names # mapping to prevent labels being parsed as ints in train/testing
     df = pd.DataFrame(ds["train"])  # banking77 dataset only has 'train' split (no val/test)
+    df["label_text"] = df["label"].apply(lambda i: label_map[i])
     train_df, temp = train_test_split(df, test_size=cfg.test_split+cfg.val_split,
                                       random_state=cfg.seed, stratify=df["label"])
     rel = cfg.val_split/(cfg.test_split+cfg.val_split)
