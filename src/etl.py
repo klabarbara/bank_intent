@@ -1,7 +1,7 @@
 """
 ETL for Banking 77 dataset. EDA shows Banking77 ships as a single `train` split on hf.  
 
-1. downloads the corpus,
+1. downloads the corpus
 2. performs a stratified train/val/test split (80/10/10 by default),
 3. stores each partition as Apache Parquet
 
