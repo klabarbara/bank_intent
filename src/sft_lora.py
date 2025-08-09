@@ -124,6 +124,7 @@ def main(
             eval_strategy="epoch",
             num_train_epochs=cfg.epochs,
             logging_steps=50,
+            warmup_ratio=0.1,
             per_device_train_batch_size=cfg.batch_size,
             per_device_eval_batch_size=cfg.batch_size,
             load_best_model_at_end=True,
