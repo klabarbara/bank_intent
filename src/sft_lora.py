@@ -115,6 +115,8 @@ def main(
         model.print_trainable_parameters()  
 
         args = TrainingArguments(
+            disable_tqdm=True,          
+            logging_strategy="epoch",   
             fp16=torch.cuda.is_available(),  
             output_dir=cfg.output_dir,
             learning_rate=cfg.lr,
