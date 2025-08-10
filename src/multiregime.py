@@ -3,12 +3,13 @@ import logging
 from pathlib import Path
 from typing import Dict
 
+import json
 import mlflow
 import pandas as pd
 import torch
 import typer
 from datasets import Dataset
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, PeftModel
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from transformers import (
@@ -38,18 +39,26 @@ def compute_metrics(eval_pred) -> Dict[str, float]:
         "macro_f1": f1_score(labels, preds, average="macro"),
     }
 
+def save_labels_json(path: Path, classes) -> Path:
+    id2label = {i: str(lbl) for i, lbl in enumerate(classes)}
+    label2id = {str(lbl): i for i, lbl in enumerate(classes)}
+    payload = {"id2label": id2label, "label2id": label2id}
+    path.mkdir(parents=True, exist_ok=True)
+    f = path / "labels.json"
+    f.write_text(json.dumps(payload, indent=2))
+    return f
 
 @app.command()
 def main(
     train_config: str = "configs/train.yaml",
     sample_n: int = 0,
     regime: str = typer.Option(
-        "lora", "--regime", "-r", help="one of: head-only | lora | full-ft"
+        "lora", "--regime", "-r", help="head-only, lora, full-ft"
     ),
 ) -> None:
     cfg: TrainCfg = load_config(train_config, TrainCfg)
 
-    mlflow.set_experiment("banking77")
+    mlflow.set_experiment("bank_intent")
     with mlflow.start_run():
         # tags for MLFlow tables
         mlflow.set_tags(
@@ -139,6 +148,7 @@ def main(
         logger.info("trainable params: %d / %d", trainable, total)
 
         args = TrainingArguments(
+            disable_tqdm=True,          
             output_dir=cfg.output_dir,
             per_device_train_batch_size=cfg.batch_size,
             per_device_eval_batch_size=cfg.batch_size,
@@ -170,19 +180,56 @@ def main(
         mlflow.log_metrics(final)
 
         # persist artifacts
-        out_dir = Path(cfg.output_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(out_dir)
-        tokenizer.save_pretrained(out_dir)
-        mlflow.log_artifacts(out_dir, artifact_path="model")
-        mlflow.log_text(str(final), "metrics.txt")
+        out_root = Path(cfg.output_dir)
+        out_root.mkdir(parents=True, exist_ok=True)
 
-        logger.info(
-            "final: %s — Acc: %.3f | Macro-F1: %.3f",
-            regime,
-            final.get("eval_accuracy", -1.0),
-            final.get("eval_macro_f1", -1.0),
-        )
+        # freeze label schema 
+        labels_file = save_labels_json(out_root, encoder.classes_)
+
+        if regime == "lora":
+            adapter_dir = out_root / "adapter"    # lora weights/peft
+            base_dir    = out_root / "base_77"    # label base for reattach
+            merged_dir  = out_root / "merged"     # fully merged hf model (no peft required in evbal now)
+
+            # save the peft adapter, model is PeftModel because we used get_peft_model()
+            adapter_dir.mkdir(parents=True, exist_ok=True)
+            model.save_pretrained(adapter_dir)
+
+            # save the label base for lora (same head/label maps as training)
+            base.save_pretrained(base_dir)
+            tokenizer.save_pretrained(base_dir)
+            save_labels_json(base_dir, encoder.classes_)
+
+            # merge and save a standalone model
+            peft_model: PeftModel = trainer.model  # already on best weights from load_best_model_at_end=True
+            merged = peft_model.merge_and_unload()  # bake LoRA into base weights
+            merged_dir.mkdir(parents=True, exist_ok=True)
+            merged.save_pretrained(merged_dir)
+            tokenizer.save_pretrained(merged_dir)
+            save_labels_json(merged_dir, encoder.classes_)
+
+            # logs artifacts to mlflow
+            mlflow.log_artifacts(adapter_dir, artifact_path="model/adapter")
+            mlflow.log_artifacts(base_dir,    artifact_path="model/base_77")
+            mlflow.log_artifacts(merged_dir,  artifact_path="model/merged")
+            mlflow.log_artifact(str(labels_file), artifact_path="model")
+
+            # also log which path is the “primary” model to use for eval/deploy for posterity
+            mlflow.set_tags({"export.primary_model": "merged", "export.contains": "adapter,base_77,merged"})
+
+        else:
+            # head-only or full-ft are both already standalone HF models
+            model_dir = out_root / "model"
+            model_dir.mkdir(parents=True, exist_ok=True)
+            model.save_pretrained(model_dir)
+            tokenizer.save_pretrained(model_dir)
+            save_labels_json(model_dir, encoder.classes_)
+
+            mlflow.log_artifacts(model_dir, artifact_path="model")
+            mlflow.log_artifact(str(labels_file), artifact_path="model")
+
+        # plaintext eval summary
+        mlflow.log_text(str(final), "metrics.txt")
 
 
 if __name__ == "__main__":
