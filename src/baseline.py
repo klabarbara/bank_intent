@@ -28,6 +28,14 @@ def run(
     ):    
     mlflow.set_experiment("baseline")
     with mlflow.start_run():
+        # tags to distinguish from lora peft
+        mlflow.set_tags({
+            "phase": "eval",
+            "dataset": "banking77",
+            "split": "test",
+            "baseline_type": "zero_shot_nli",  
+            "model_name": model_name
+        })
         test = pd.read_parquet(data_path)
 
         if sample_n > 0:
