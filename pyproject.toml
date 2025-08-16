@@ -24,9 +24,9 @@ dependencies = [
   "mlflow>=2.12.0",
   "matplotlib>=3.8.0",
   "seaborn>=0.13.0",
-  "gradio>=4.0.0",
   "pandas>=2.2.0",
-  "pyarrow>=15.0.0"
+  "pyarrow>=15.0.0",
+  "dotenv"
 ]
 
 [tool.setuptools.packages.find]
