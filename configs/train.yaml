@@ -7,5 +7,5 @@ lora:
   r: 16
   alpha: 32
   dropout: 0.1
-  target_modules: ["query_proj","key_proj","value_proj","output_proj"]  # adjust per model
+  target_modules: ["query_proj","key_proj","value_proj","output_proj"] 
 output_dir: "artifacts/models/deberta_lora"
