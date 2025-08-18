@@ -3,6 +3,8 @@
 
 ## TL;DR
 
+Demo available at: https://huggingface.co/spaces/KayLaB/bankintent
+
 - Task: Single sentence user query classification on the Banking77 dataset (with 77 classes)
 - Approach: Two Training regimes in one script. LoRA, full fine-tune
 - Why LoRA: Near-parity accuracy to full fine-tuning with small fraction of trainable parameters, lower compute time and resources, and faster iteration. 
