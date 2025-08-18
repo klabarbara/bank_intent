@@ -13,9 +13,23 @@
 
 ## Motivation
 
-Banking apps need to instantly interpret what users want (eg: "check my balance", "open a new card", or "dispute a transaction") with high accuracy and low latency. There are dozens of fine-grained “intents” in production banking bots, and those categories change as banks evolve.
+Banking apps need to instantly interpret what users want (eg: "check my balance", "open a new card", or "dispute a transaction") with high accuracy and low latency. There are dozens of fine grained "intents" in production banking bots, and those categories change as banks evolve.
 
-Classic large language models can solve this, but *full* fine-tuning of modern transformers (BERT, RoBERTa, DeBERTa, etc) is costly, especially for teams without dedicated ML infra or large budgets for GPUs.  
+Classic large language models can solve this, but full fine-tuning of modern transformers (BERT, RoBERTa, DeBERTa, etc) is costly, especially for teams without dedicated ML infra or large budgets for GPUs.  
+---
+
+## Why Won’t a Pretrained get the job done? Zero-shot on Banking77 
+
+- Label–verbalizer mismatch: NLI style zero-shot treats labels as hypotheses. Many Banking77 names aren’t natural paraphrases of user text(eg: people don't complain about their "lost or stolen card"), so entailment signals are weak/misaligned.
+
+- Fine-grained overlap: Banking77 has 77 intents classese with semantically near neighbors (eg: delivery vs arrival vs replacement). This pushes zero-shot inference toward superficial cues and frequent, generic labels.
+
+- Short, pragmatic utterances: Tickets are brief ("why still no card"  or "limits?") and are context light. Disambiguation requires domain knowledge, not just pretraining priors.
+
+- Domain drift: Fintech terms, BINs, policy lingo, and merchant patterns are updated frequently but also underrepresented in NLI style pretraining.  Embeddings can't separate banking's (or any similar domain's) specific classes if their pretraining has never encountered them.
+
+- Prompt sensitivity, no adaptation: Tiny prompt edits swing predictions and there’s no gradient to align the encoder to your 77-way ontology. In practice I saw ~14–35% zero-shot accuracy using an NLI model (facebook/bart-large-mnli). Using the smaller, general purpose deberta-v3-base, zero-shot inference was unusable at ~6%. However, the same small model, after having a minority of its parameters trained through LoRA, yielded >92% once adapted far surpassing even the NLI-task specialized large model.
+
 ---
 
 ## Enter the LoRA
@@ -126,7 +140,7 @@ export MODEL_DIR=artifacts/models/your_run/merged
 uvicorn backend:app --reload
 ```
 
-> Tip: The Trainer auto‑enables `fp16` if CUDA is available. Set `epochs`, `lr`, and `batch_size` in `configs/train.yaml`.
+Note: The Trainer auto‑enables `fp16` if CUDA is available. Set `epochs`, `lr`, and `batch_size` in `configs/train.yaml`.
 
 ---
 
@@ -173,9 +187,9 @@ From comparable runs with the same backbone and training budget:
 | Full FT   | 100%             | ~93.8%     | ~93.1% | Most compute‑intensive                |
 
 
-Note: Baseline zero-shot inference also included (`baseline.py`) for reference. Using the frozen NLI model 
-
 Exact metrics depend on backbone, `r/alpha`, epochs, sequence length, and other hyperparameters. However, the efficiency‑to‑accuracy trade‑off holds.
+
+<sub>Note: Baseline zero-shot inference also included (`baseline.py`) for reference. Using the frozen NLI model facebook/bart-large-mnli, achieved peak of 35% acc.</sub>
 
 ---
 
@@ -213,7 +227,7 @@ Note:  Tweak `r/alpha/dropout` for your GPU and dataset. Consider using scheduli
 
 ## Troubleshooting
 
-* **“Found adapter but no base_77 directory.”** Use the **merged** model for eval/serve, or re‑attach the adapter to the exact `base_77/` it was trained with.
+* **"Found adapter but no base_77 directory."** Use the **merged** model for eval/serve, or re‑attach the adapter to the exact `base_77/` it was trained with.
 * **Classifier missing after LoRA load.** Ensure `modules_to_save=["classifier"]` is in the LoRA config.
 * **Macro‑F1 is low but accuracy is fine.** Check class balance and confusion matrix; you may be under‑serving rare intents.
 * **GPU detected but slow.** Ensure batch size is reasonable (eg: in colab, with a T4 on default memory, batch size 64 is fine); `fp16` auto‑enabled if CUDA available.
@@ -224,7 +238,7 @@ Note:  Tweak `r/alpha/dropout` for your GPU and dataset. Consider using scheduli
 ## Extending This Work
 
 * **Swap backbones** by editing `model_name` in `train.yaml` and updating `target_modules`.
-* **Hard Negative Contrast Training** Mine contrast set for hard negative pairs (eg: “I lost my debit card” vs. “I need a new debit PIN”), fine-tune prior to LoRA.
+* **Hard Negative Contrast Training** Mine contrast set for hard negative pairs (eg: "I lost my debit card" vs. "I need a new debit PIN"), fine-tune prior to LoRA.
 * **UI**: Swap out Gradio front end for more full-featured React htmx for a more webdev-ready, 'python-free' UI. 
 
 ---
