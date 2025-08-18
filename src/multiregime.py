@@ -10,6 +10,7 @@ import torch
 import typer
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model, PeftModel
+from peft.utils import _get_submodules
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import LabelEncoder
 from transformers import (
@@ -118,6 +119,7 @@ def main(
                 modules_to_save=["classifier"],  # keep head trainable/savable
             )
             model = get_peft_model(base, lora_cfg)
+            model.print_trainable_parameters()
         elif regime == "head-only":
             model = base
             for name, p in model.named_parameters():
