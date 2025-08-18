@@ -7,7 +7,7 @@
 - Approach: Two Training regimes in one script. LoRA, full fine-tune
 - Why LoRA: Near-parity accuracy to full fine-tuning with small fraction of trainable parameters, lower compute time and resources, and faster iteration. 
 - Result snapshot: (current runs, may not be reflected in demo): LoRA achieved 92.2% accuracy, full fine-tune 93.5%, LoRA trains only ~0.03% of pararmeters.
-- Dev and MLOps tooling: Config driven Typer CLIs, Parquet ETL, HF trainer (with jupyter notebook walkthrough), MLflow tracking, artifact layout designed for adapter and merged models, tiny FastAPI backend and Gradio frontend for local serving (live demo on spaces uses slight variation)
+- Dev and MLOps tooling: Config driven Typer CLIs, Parquet ETL, HF trainer and jupyter notebook Colab walkthrough, MLflow tracking, artifact layout designed for adapter and merged models, small FastAPI backend and Gradio frontend for local serving (live demo on spaces uses slight variation)
 
 ---
 
@@ -100,7 +100,7 @@ Note: `baseline.py` evaluates the pretrained model's zero shot benchmark on the 
 
 ## Quickstart
 
-### Please see notebook for colab training, tracking, and eval. 
+### **Please see notebooks/walkthrough.ipynb for colab training, tracking, and eval.**
 
 ```bash
 # 1) Create env & install deps 
@@ -142,7 +142,7 @@ lora_cfg = LoraConfig(
     target_modules=cfg.lora.target_modules,
     bias="none",
     task_type="SEQ_CLS",
-    modules_to_save=["classifier"],
+    modules_to_save=["classifier"],`
 )
 model = get_peft_model(base, lora_cfg)
 ```
@@ -168,11 +168,12 @@ From comparable runs with the same backbone and training budget:
 
 | Regime    | Trainable Params | Accuracy    | Macro‑F1            | Notes                                 |
 | --------- | ---------------- | ----------- | ------------------- | ------------------------------------- |
-| Baseline | None             | Chance ~1.3%    | ~1.5%            | Separate script included for dev purposes
 | Head‑only | ~0.001%             | ~15.5%  | ~12.5%            | Fastest, underfits good as a smoke test         |
 | **LoRA**  | **~0.003%**,         | **~92.2%** |     ~91%   | Near‑parity with a fraction of params of full fine tune |
 | Full FT   | 100%             | ~93.8%     | ~93.1% | Most compute‑intensive                |
 
+
+Note: Baseline zero-shot inference also included (`baseline.py`) for reference. Using the frozen NLI model 
 
 Exact metrics depend on backbone, `r/alpha`, epochs, sequence length, and other hyperparameters. However, the efficiency‑to‑accuracy trade‑off holds.
 
