@@ -11,7 +11,7 @@ import typer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import matplotlib.pyplot as plt
-from peft import AutoPeftModelForSequenceClassification, PeftModel
+from peft import PeftModel
 
 
 app = typer.Typer(add_completion=False)
@@ -97,8 +97,6 @@ def run(
     classes = [v for k, v in sorted(id2label.items(), key=lambda kv: int(kv[0]))]
     # sorted numeric keys for classification report and confusion mtx
     labels = [int(k) for k in sorted(id2label.keys(), key=int)]
-
-    # map y_true to ids 
 
     # batched inference
     preds: List[int] = []
