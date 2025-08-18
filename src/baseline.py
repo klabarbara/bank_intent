@@ -24,7 +24,7 @@ def run(
         label_map_path: str = "data/processed/train.parquet",
         timeit: bool = False,
         sample_n: int = 0, # enables cli level sample ctrl for dev
-        model_name: str = "typeform/distilbert-base-uncased-mnli", # microsoft/deberta-v3-base used in multiregime not useful for zero shot
+        model_name: str = "facebook/bart-large-mnli", # microsoft/deberta-v3-base used in multiregime not useful for zero shot
         batch_size: int = 64,
     ):    
     mlflow.set_experiment("baseline")
