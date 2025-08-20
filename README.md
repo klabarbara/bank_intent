@@ -1,4 +1,4 @@
-# Banking77 Intent Classification:
+# Banking77 Intent Classification
 ## Why I Chose LoRA (and How I Built It)
 
 ## TL;DR
