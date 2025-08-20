@@ -243,15 +243,4 @@ Note:  Tweak `r/alpha/dropout` for your GPU and dataset. Consider using scheduli
 * **Hard Negative Contrast Training** Mine contrast set for hard negative pairs (eg: "I lost my debit card" vs. "I need a new debit PIN"), fine-tune prior to LoRA.
 * **UI**: Swap out Gradio front end for more full-featured React htmx for a more webdev-ready, 'python-free' UI. 
 
----
 
-## Citation & Thanks
-
-* LoRA: Hu et al., *LoRA: Low‑Rank Adaptation of Large Language Models*, 2021.
-* Hugging Face Transformers, Datasets, PEFT, scikit‑learn, MLflow, FastAPI — thanks for all the shoulders, giants. 
-
----
-
-## License
-
-MIT
