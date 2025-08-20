@@ -18,6 +18,7 @@ Demo available at: https://huggingface.co/spaces/KayLaB/bankintent
 Banking apps need to instantly interpret what users want (eg: "check my balance", "open a new card", or "dispute a transaction") with high accuracy and low latency. There are dozens of fine grained "intents" in production banking bots, and those categories change as banks evolve.
 
 Classic large language models can solve this, but full fine-tuning of modern transformers (BERT, RoBERTa, DeBERTa, etc) is costly, especially for teams without dedicated ML infra or large budgets for GPUs.  
+
 ---
 
 ## Why Won’t a Pretrained get the job done? Zero-shot on Banking77 
